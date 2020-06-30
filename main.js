@@ -58,6 +58,18 @@ class Vote{
     }
 }
 
+function checkchannel(id){
+    for(var i = 0; i < VotingSystemarray.length; i++){
+        if(VotingSystemarray[i].VotingChannel.id == id){
+            return "voting";
+        }else if(VotingSystemarray[i].ResultsChannel.id == id){
+            return "result";
+        }else{
+            return "notingfound"
+        }
+    }
+}
+
 function searchchannel(id){
     var guilds = client.guilds.cache.array();
     for(var i = 0; i < guilds.length; i++){
@@ -76,9 +88,9 @@ function addVotingSystem(){
     for(var i = 0; i < newVotingSystems.length; i++){
         VotingSystemarray.push(new VotingSystem(newVotingSystems[i].voting, newVotingSystems[i].result)); 
         options.numberofVotingSystems++;
-        // fs.writeFileSync("options.json", JSON.stringify(options));
-        // fs.writeFileSync("voting/" + newVotingSystems[i].voting.id + ".json", VotingSystemarray[VotingSystemarray.length - 1].toJSON());
-        // newVotingSystems[i].voting.send("Congratulations! Voting Bot joined the server! \n Please do not resist!");
+        fs.writeFileSync("options.json", JSON.stringify(options));
+        fs.writeFileSync("voting/" + newVotingSystems[i].voting.id + ".json", VotingSystemarray[VotingSystemarray.length - 1].toJSON());
+        newVotingSystems[i].voting.send("Congratulations! Voting Bot joined the server! \n Please do not resist!");
     }
 }
 
@@ -93,11 +105,13 @@ client.on("message", msg => {
     if(msg.member.user.id == client.user.id) return 0;
     if(msg.content.substring(0, 7) == "NotVote") return 0;
     // console.log(msg.channel);
-    
+
     //fixes problem with people using different emojis
-    msg.react('👍');
-    msg.react('✋');
-    msg.react('👎');
+    if(checkchannel(msg.channel.id) == "voting"){
+        msg.react('👍');
+        msg.react('✋');
+        msg.react('👎');
+    }
 });
 
 client.login(process.env.BOT_TOKEN);
