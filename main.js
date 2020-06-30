@@ -16,10 +16,10 @@ class VotingSystem{
     * @param {Discord.TextChannel} ResultsChannel - Results Channel
     * @param {Array} VoteArray - a Vote Array (optional)
     */
-    constructor(VotingChannel, ResultsChannel, VotingArray = []){
+    constructor(VotingChannel, ResultsChannel, VoteArray = []){
         this.VotingChannel = VotingChannel;
         this.ResultsChannel = ResultsChannel;
-        this.VotingArray = VotingArray;
+        this.VotingArray = VoteArray;
     }
 
     toJSON(){
@@ -30,11 +30,19 @@ class VotingSystem{
     /**
      * string should look like:                                   
      * "{"voting":"999999999999999999","result":"999999999999999999"}"
-     * @param {String} options - string fron JSON file
+     * @param {String} options - string from JSON file
      */
     static fromJSON(options){
         options = JSON.parse(options);
         return new VotingSystem(searchchannel(options.voting), searchchannel(options.result));
+    }
+
+    addVote(message){
+        message.react('👍');
+        message.react('✋');
+        message.react('👎');
+        this.VoteArray.push(new Vote(message));
+        fs.writeFileSync("voting/" + this.VotingChannel.id + ".json", this.toJSON());
     }
 }
 
@@ -61,11 +69,11 @@ class Vote{
 function checkchannel(id){
     for(var i = 0; i < VotingSystemarray.length; i++){
         if(VotingSystemarray[i].VotingChannel.id == id){
-            return "voting";
+            return ["voting", i];
         }else if(VotingSystemarray[i].ResultsChannel.id == id){
-            return "result";
+            return ["result", i];
         }else{
-            return "notingfound"
+            return ["notingfound"]
         }
     }
 }
@@ -88,6 +96,7 @@ function addVotingSystem(){
     for(var i = 0; i < newVotingSystems.length; i++){
         VotingSystemarray.push(new VotingSystem(newVotingSystems[i].voting, newVotingSystems[i].result)); 
         options.numberofVotingSystems++;
+        options.fileids.push(newVotingSystems[i].voting.id);
         fs.writeFileSync("options.json", JSON.stringify(options));
         fs.writeFileSync("voting/" + newVotingSystems[i].voting.id + ".json", VotingSystemarray[VotingSystemarray.length - 1].toJSON());
         newVotingSystems[i].voting.send("Congratulations! Voting Bot joined the server! \n Please do not resist!");
@@ -107,10 +116,8 @@ client.on("message", msg => {
     // console.log(msg.channel);
 
     //fixes problem with people using different emojis
-    if(checkchannel(msg.channel.id) == "voting"){
-        msg.react('👍');
-        msg.react('✋');
-        msg.react('👎');
+    if(checkchannel(msg.channel.id)[0] == "voting"){
+        VotingSystemarray[checkchannel(msg.channel.id)[1]].addVote(msg);
     }
 });
 
