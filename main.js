@@ -93,7 +93,11 @@ client.on("message", msg => {
     if(msg.member.user.id == client.user.id) return 0;
     if(msg.content.substring(0, 7) == "NotVote") return 0;
     // console.log(msg.channel);
-    msg.channel.send("test");
+    
+    //fixes problem with people using different emojis
+    msg.react('👍');
+    msg.react('✋');
+    msg.react('👎');
 });
 
 client.login(process.env.BOT_TOKEN);
