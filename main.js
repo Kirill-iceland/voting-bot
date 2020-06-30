@@ -1,12 +1,16 @@
 require("dotenv").config()
 const Discord = require("discord.js");
 const fs = require('fs');
+const { Console } = require("console");
 const client = new Discord.Client();
 
 
 //Insert object to add new VotingSystems. Example: {voting: "725669865561653298", result: "725669928723808267"} remove after json file is created
 const newVotingSystems= [];
+
 var VotingSystemarray = [];
+//time before pinging in ms || 24h = 86400000‬ms
+const pingtime = 10000;
 
 var options = JSON.parse(fs.readFileSync("options.json"));
 
@@ -19,7 +23,7 @@ class VotingSystem{
     constructor(VotingChannel, ResultsChannel, VoteArray = []){
         this.VotingChannel = VotingChannel;
         this.ResultsChannel = ResultsChannel;
-        this.VotingArray = VoteArray;
+        this.VoteArray = VoteArray;
     }
 
     toJSON(){
@@ -54,7 +58,7 @@ class Vote{
     constructor(message, options = {votes: [0, 0, 0], voters: []}){
         this.message = message;
         if(options.votes){
-            this.votes = {pisitive: option.votes[0], abstains: option.votes[1], negative: option.votes[2]}
+            this.votes = {pisitive: options.votes[0], abstains: options.votes[1], negative: options.votes[2]}
         }else{
             this.votes = {pisitive: 0, abstains: 0, negative: 0}
         }
@@ -63,6 +67,33 @@ class Vote{
         }else{
             this.voters = [];
         }
+
+        if(Date.now() - message.createdTimestamp <= pingtime){
+            setTimeout(() => {this.ping()}, Date.now() - message.createdTimestamp + pingtime);
+        }
+    }
+
+    ping(){
+        this.message.channel.send("Piiiiiiiinnnngggggg!")
+        this.updatevotes()
+        this.checkforvoters()
+    }
+
+    updatevotes(){
+        if(this.votes.positive < this.message.reactions.resolve('👍').count){
+            for(var i = 0; i < this.voters.length; i++){
+                
+            }
+        }
+        if(this.votes.abstains < this.message.reactions.resolve('✋').count){
+            
+        }
+        if(this.votes.negative < this.message.reactions.resolve('👎').count){
+            
+        }
+        this.votes = {pisitive: this.message.reactions.resolve('👍').count, abstains: this.message.reactions.resolve('✋').count, negative: this.message.reactions.resolve('👎').count}
+    }
+    checkforvoters(){
     }
 }
 
