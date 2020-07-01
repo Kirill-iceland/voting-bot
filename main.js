@@ -52,11 +52,13 @@ class VotingSystem{
 
 class Vote{
     /**
-     * @param {Discord.Message} message
+     * @param {Discord.Message} message - message
+     * @param {VotingSystem} parrent - Voting System that it is part of
      * @param {object} options - Options for this Vote (optonal)
      */
-    constructor(message, options = {votes: [0, 0, 0], voters: []}){
+    constructor(message, parrent, options = {votes: [0, 0, 0], voters: []}){
         this.message = message;
+        this.parrent = parrent;
         if(options.votes){
             this.votes = {pisitive: options.votes[0], abstains: options.votes[1], negative: options.votes[2]}
         }else{
@@ -80,20 +82,22 @@ class Vote{
     }
 
     updatevotes(){
-        if(this.votes.positive < this.message.reactions.resolve('👍').count){
-            for(var i = 0; i < this.voters.length; i++){
-                
-            }
-        }
-        if(this.votes.abstains < this.message.reactions.resolve('✋').count){
-            
-        }
-        if(this.votes.negative < this.message.reactions.resolve('👎').count){
-            
+        for(var i = 0; i < this.voters.length; i++){
+
         }
         this.votes = {pisitive: this.message.reactions.resolve('👍').count, abstains: this.message.reactions.resolve('✋').count, negative: this.message.reactions.resolve('👎').count}
     }
     checkforvoters(){
+    }
+}
+
+class Voter{
+    /**
+     * @param {Discord.GuildMember} GuildMember - Voter
+     * @param {object} options - Options for this Voter (optonal)
+     */
+    constructor(GuildMember, options = {votes: []}){
+
     }
 }
 
