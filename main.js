@@ -123,14 +123,19 @@ class Voter{
      * @param {object} options - Options for this Voter (optonal)
      */
     constructor(GuildMember, options = {fromJSON: false, votes: []}){
-        if(fromJSON){
+        if(options.fromJSON){
             this.Member = GuildMember;
             this.votes = options.votes;
             fs.writeFileSync("Voters/" + this.Member.id + ".json", this.toJSON());
         }else{
-            var json = JSON.parse(fs.readFileSync("VotingSystem/" + options.fileids[i] + ".json"));
-            this.Member = searcmember(json.GuildMember);
-            this.votes = json.votes;
+            this.Member = GuildMember;
+            try{
+                var json = JSON.parse(fs.readFileSync("Voters/" + GuildMember.id + ".json"));
+                this.votes = json.votes;
+            }catch(error){
+                fs.writeFileSync("Voters/" + GuildMember.id + ".json", this.toJSON());
+                this.votes = options.votes;
+            }
         }
     }
 
@@ -183,7 +188,7 @@ function searcmember(id){
     var guilds = client.guilds.cache.array();
     for(var i = 0; i < guilds.length; i++){
         var members = guilds[i].members;
-        try{return members.resolve(id)}catch{};
+        try{return members.resolve(id)}catch(error){};
     }
     return {id: id};
 }
@@ -192,7 +197,7 @@ function searchrole(id){
     var guilds = client.guilds.cache.array();
     for(var i = 0; i < guilds.length; i++){
         var roles = guilds[i].roles;
-        try{return roles.resolve(id)}catch{};
+        try{return roles.resolve(id)}catch(error){};
     }
 }
 
@@ -200,7 +205,7 @@ function searchchannel(id){
     var guilds = client.guilds.cache.array();
     for(var i = 0; i < guilds.length; i++){
         var channels = guilds[i].channels;
-        try{return channels.resolve(id)}catch{};
+        try{return channels.resolve(id)}catch(error){};
     }
 }
 
