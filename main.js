@@ -5,7 +5,7 @@ const { Console } = require("console");
 const client = new Discord.Client();
 
 
-//Insert object to add new VotingSystems. Example: {voting: "725669865561653298", result: "725669928723808267"} remove after json file is created
+//Insert object to add new VotingSystems. Example: {voting: "725669865561653298", result: "725669928723808267", Role: } remove after json file is created
 const newVotingSystems= [];
 
 var VotingSystemarray = [];
@@ -18,34 +18,36 @@ class VotingSystem{
     /**
     * @param {Discord.TextChannel} VotingChannel - Voting Channel
     * @param {Discord.TextChannel} ResultsChannel - Results Channel
+    * @param {Discord.Role} Role - Voting Role
     * @param {Array} VoteArray - a Vote Array (optional)
     */
-    constructor(VotingChannel, ResultsChannel, VoteArray = []){
+    constructor(VotingChannel, ResultsChannel, Role, VoteArray = []){
         this.VotingChannel = VotingChannel;
         this.ResultsChannel = ResultsChannel;
+        this.Role = Role;
         this.VoteArray = VoteArray;
     }
 
     toJSON(){
-        const options = {voting: this.VotingChannel.id, result: this.ResultsChannel.id};
+        const options = {voting: this.VotingChannel.id, result: this.ResultsChannel.id, role: this.Role.id};
         return JSON.stringify(options);
     }
 
     /**
      * string should look like:                                   
-     * "{"voting":"999999999999999999","result":"999999999999999999"}"
+     * "{"voting":"id","result":"id","role":"id"}"
      * @param {String} options - string from JSON file
      */
     static fromJSON(options){
         options = JSON.parse(options);
-        return new VotingSystem(searchchannel(options.voting), searchchannel(options.result));
+        return new VotingSystem(searchchannel(options.voting), searchchannel(options.result), searchrole(options.role));
     }
 
     addVote(message){
         message.react('👍');
         message.react('✋');
         message.react('👎');
-        this.VoteArray.push(new Vote(message));
+        this.VoteArray.push(new Vote(message, this));
         fs.writeFileSync("voting/" + this.VotingChannel.id + ".json", this.toJSON());
     }
 }
@@ -53,12 +55,12 @@ class VotingSystem{
 class Vote{
     /**
      * @param {Discord.Message} message - message
-     * @param {VotingSystem} parrent - Voting System that it is part of
+     * @param {VotingSystem} VotingSystem - Voting System that it is part of
      * @param {object} options - Options for this Vote (optonal)
      */
-    constructor(message, parrent, options = {votes: [0, 0, 0], voters: []}){
+    constructor(message, VotingSystem, options = {votes: [0, 0, 0], voters: []}){
         this.message = message;
-        this.parrent = parrent;
+        this.VotingSystem = VotingSystem;
         if(options.votes){
             this.votes = {pisitive: options.votes[0], abstains: options.votes[1], negative: options.votes[2]}
         }else{
@@ -76,18 +78,38 @@ class Vote{
     }
 
     ping(){
-        this.message.channel.send("Piiiiiiiinnnngggggg!")
         this.updatevotes()
-        this.checkforvoters()
+        var voterstoping = this.checkforvoters()
     }
 
     updatevotes(){
-        for(var i = 0; i < this.voters.length; i++){
-
+        var rolemembers = this.VotingSystem.Role.members.array();
+        for(let i = 0; i < rolemembers.length; i++){
+            if(this.message.reactions.resolve('👍').users.resolve(rolemembers[i].user.id)){
+                var skip = false;
+                for(var j = 0; j < this.voters.length; j++){
+                    if(this.voters[j].Member == rolemembers[i]) skip = true;
+                }
+                if(!skip){
+                    this.voters.push(new Voter(rolemembers[i]))
+                }
+            }
         }
         this.votes = {pisitive: this.message.reactions.resolve('👍').count, abstains: this.message.reactions.resolve('✋').count, negative: this.message.reactions.resolve('👎').count}
     }
     checkforvoters(){
+        var msg = "";
+        var rolemembers = this.VotingSystem.Role.members.array();
+        for(let i = 0; i < rolemembers.length; i++){
+            var skip = false;
+            for(var j = 0; j < this.voters.length; j++){
+                if(this.voters[j].Member == rolemembers[i]) skip = true;
+            }
+            if(!skip){
+                msg += rolemembers[i].toString() + ",\n";
+            }
+        }
+        this.message.channel.send(msg + "pleace vote!")
     }
 }
 
@@ -97,7 +119,8 @@ class Voter{
      * @param {object} options - Options for this Voter (optonal)
      */
     constructor(GuildMember, options = {votes: []}){
-
+        this.Member = GuildMember;
+        this.votes = options.votes;
     }
 }
 
@@ -110,6 +133,14 @@ function checkchannel(id){
         }else{
             return ["notingfound"]
         }
+    }
+}
+
+function searchrole(id){
+    var guilds = client.guilds.cache.array();
+    for(var i = 0; i < guilds.length; i++){
+        var roles = guilds[i].roles;
+        try{return roles.resolve(id)}catch{};
     }
 }
 
@@ -155,5 +186,9 @@ client.on("message", msg => {
         VotingSystemarray[checkchannel(msg.channel.id)[1]].addVote(msg);
     }
 });
+
+client.on("messageReactionAdd", (messageReaction, User) => {
+
+})
 
 client.login(process.env.BOT_TOKEN);
