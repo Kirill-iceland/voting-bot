@@ -136,7 +136,18 @@ class Voter{
     }
 
     toJSON(){
+        const options = {GuildMember: this.Member.id, votes: this.votes};
+        return JSON.stringify(options);
+    }
 
+    /**
+     * string should look like:                                   
+     * "{"GuildMember": "id", "votes": "votes"}"
+     * @param {String} options - string from JSON file
+     */
+    static fromJSON(options){
+        options = JSON.parse(options);
+        return new Voter(searcmember(options.GuildMember), {votes: options.votes});
     }
 }
 
@@ -149,6 +160,14 @@ function checkchannel(id){
         }else{
             return ["notingfound"]
         }
+    }
+}
+
+function searcmember(id){
+    var guilds = client.guilds.cache.array();
+    for(var i = 0; i < guilds.length; i++){
+        var members = guilds[i].members;
+        try{return members.resolve(id)}catch{};
     }
 }
 
