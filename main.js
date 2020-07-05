@@ -10,7 +10,7 @@ const newVotingSystems= [];
 
 var VotingSystemarray = [];
 //time before pinging in ms || 24h = 86400000‬ms
-const pingtime = 10000;
+const pingtime = 5000;
 
 var options = JSON.parse(fs.readFileSync("options.json"));
 
@@ -48,7 +48,7 @@ class VotingSystem{
         message.react('✋');
         message.react('👎');
         this.VoteArray.push(new Vote(message, this));
-        fs.writeFileSync("voting/" + this.VotingChannel.id + ".json", this.toJSON());
+        fs.writeFileSync("VotingSystem/" + this.VotingChannel.id + ".json", this.toJSON());
     }
 }
 
@@ -79,25 +79,6 @@ class Vote{
 
     ping(){
         this.updatevotes()
-        var voterstoping = this.checkforvoters()
-    }
-
-    updatevotes(){
-        var rolemembers = this.VotingSystem.Role.members.array();
-        for(let i = 0; i < rolemembers.length; i++){
-            if(this.message.reactions.resolve('👍').users.resolve(rolemembers[i].user.id)){
-                var skip = false;
-                for(var j = 0; j < this.voters.length; j++){
-                    if(this.voters[j].Member == rolemembers[i]) skip = true;
-                }
-                if(!skip){
-                    this.voters.push(new Voter(rolemembers[i]))
-                }
-            }
-        }
-        this.votes = {pisitive: this.message.reactions.resolve('👍').count, abstains: this.message.reactions.resolve('✋').count, negative: this.message.reactions.resolve('👎').count}
-    }
-    checkforvoters(){
         var msg = "";
         var rolemembers = this.VotingSystem.Role.members.array();
         for(let i = 0; i < rolemembers.length; i++){
@@ -111,6 +92,29 @@ class Vote{
         }
         this.message.channel.send(msg + "pleace vote!")
     }
+
+    updatevotes(){
+        var rolemembers = this.VotingSystem.Role.members.array();
+        for(let i = 0; i < rolemembers.length; i++){
+            if(this.message.reactions.resolve('👍').users.resolve(rolemembers[i].user.id) || this.message.reactions.resolve('✋').users.resolve(rolemembers[i].user.id) || this.message.reactions.resolve('👎').users.resolve(rolemembers[i].user.id)){
+                var skip = false;
+                for(var j = 0; j < this.voters.length; j++){
+                    if(this.voters[j].Member == rolemembers[i]) skip = true;
+                }
+                if(!skip){
+                    this.voters.push(new Voter(rolemembers[i]))
+                    if(this.message.reactions.resolve('👍').users.resolve(rolemembers[i].user.id)){
+                        this.voters[this.voters.length - 1].addVote(this, 0)
+                    }else if(this.message.reactions.resolve('✋').users.resolve(rolemembers[i].user.id)){
+                        this.voters[this.voters.length - 1].addVote(this, 1)
+                    }else if(this.message.reactions.resolve('👎').users.resolve(rolemembers[i].user.id)){
+                        this.voters[this.voters.length - 1].addVote(this, 2)
+                    }
+                }
+            }
+        }
+        this.votes = {pisitive: this.message.reactions.resolve('👍').count, abstains: this.message.reactions.resolve('✋').count, negative: this.message.reactions.resolve('👎').count}
+    }
 }
 
 class Voter{
@@ -121,6 +125,18 @@ class Voter{
     constructor(GuildMember, options = {votes: []}){
         this.Member = GuildMember;
         this.votes = options.votes;
+    }
+
+    /**
+     * @param {Vote} vote 
+     * @param {Number} thisvotersvote - 0 for 👍, 1 for ✋ and 2 for 👎
+     */
+    addvote(vote, thisvotersvote){
+        this.votes.push({vote: vote.message.id, thisvotersvote: thisvotersvote});
+    }
+
+    toJSON(){
+
     }
 }
 
@@ -164,7 +180,7 @@ function addVotingSystem(){
         options.numberofVotingSystems++;
         options.fileids.push(newVotingSystems[i].voting.id);
         fs.writeFileSync("options.json", JSON.stringify(options));
-        fs.writeFileSync("voting/" + newVotingSystems[i].voting.id + ".json", VotingSystemarray[VotingSystemarray.length - 1].toJSON());
+        fs.writeFileSync("VotingSystem/" + newVotingSystems[i].voting.id + ".json", VotingSystemarray[VotingSystemarray.length - 1].toJSON());
         newVotingSystems[i].voting.send("Congratulations! Voting Bot joined the server! \n Please do not resist!");
     }
 }
@@ -172,7 +188,7 @@ function addVotingSystem(){
 
 client.on("ready", () => {
     console.log(`Logged in as ${client.user.tag}!`);
-    for(var i = 0; i < options.numberofVotingSystems; i++){VotingSystemarray.push(VotingSystem.fromJSON(fs.readFileSync("voting/" + options.fileids[i] + ".json")))}
+    for(var i = 0; i < options.numberofVotingSystems; i++){VotingSystemarray.push(VotingSystem.fromJSON(fs.readFileSync("VotingSystem/" + options.fileids[i] + ".json")))}
     if (newVotingSystems.length > 0) addVotingSystem();
 })
 
