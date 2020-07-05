@@ -104,11 +104,11 @@ class Vote{
                 if(!skip){
                     this.voters.push(new Voter(rolemembers[i]))
                     if(this.message.reactions.resolve('👍').users.resolve(rolemembers[i].user.id)){
-                        this.voters[this.voters.length - 1].addVote(this, 0)
+                        this.voters[this.voters.length - 1].updatevote(this, 0)
                     }else if(this.message.reactions.resolve('✋').users.resolve(rolemembers[i].user.id)){
-                        this.voters[this.voters.length - 1].addVote(this, 1)
+                        this.voters[this.voters.length - 1].updatevote(this, 1)
                     }else if(this.message.reactions.resolve('👎').users.resolve(rolemembers[i].user.id)){
-                        this.voters[this.voters.length - 1].addVote(this, 2)
+                        this.voters[this.voters.length - 1].updatevote(this, 2)
                     }
                 }
             }
@@ -122,17 +122,33 @@ class Voter{
      * @param {Discord.GuildMember} GuildMember - Voter
      * @param {object} options - Options for this Voter (optonal)
      */
-    constructor(GuildMember, options = {votes: []}){
-        this.Member = GuildMember;
-        this.votes = options.votes;
+    constructor(GuildMember, options = {fromJSON: false, votes: []}){
+        if(fromJSON){
+            this.Member = GuildMember;
+            this.votes = options.votes;
+            fs.writeFileSync("Voters/" + this.Member.id + ".json", this.toJSON());
+        }else{
+            var json = JSON.parse(fs.readFileSync("VotingSystem/" + options.fileids[i] + ".json"));
+            this.Member = searcmember(json.GuildMember);
+            this.votes = json.votes;
+        }
     }
 
     /**
      * @param {Vote} vote 
      * @param {Number} thisvotersvote - 0 for 👍, 1 for ✋ and 2 for 👎
      */
-    addvote(vote, thisvotersvote){
+    updatevote(vote, thisvotersvote){
+        for(var i = 0; i < this.votes.length; i++){
+            if(this.votes[i].vote == vote.message.id){
+                this.votes[i].thisvotersvote = thisvotersvote;
+                fs.writeFileSync("Voters/" + this.Member.id + ".json", this.toJSON());
+                return true;
+            }
+        }
         this.votes.push({vote: vote.message.id, thisvotersvote: thisvotersvote});
+        fs.writeFileSync("Voters/" + this.Member.id + ".json", this.toJSON());
+        return false;
     }
 
     toJSON(){
@@ -147,7 +163,7 @@ class Voter{
      */
     static fromJSON(options){
         options = JSON.parse(options);
-        return new Voter(searcmember(options.GuildMember), {votes: options.votes});
+        return new Voter(searcmember(options.GuildMember), {fromJSON: true, votes: options.votes});
     }
 }
 
@@ -169,6 +185,7 @@ function searcmember(id){
         var members = guilds[i].members;
         try{return members.resolve(id)}catch{};
     }
+    return {id: id};
 }
 
 function searchrole(id){
