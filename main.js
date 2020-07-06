@@ -219,6 +219,7 @@ function searcmessage(id){
         for(var j = 0; j < channels.length; j++){
             var messages = channels[j].messages
             try{return message.resolve(id)}catch(error){};
+        }
     }
 }
 
