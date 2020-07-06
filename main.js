@@ -115,6 +115,25 @@ class Vote{
         }
         this.votes = {pisitive: this.message.reactions.resolve('👍').count, abstains: this.message.reactions.resolve('✋').count, negative: this.message.reactions.resolve('👎').count}
     }
+
+    toJSON(){
+        const options = {message: this.message.id, VotingSystem: this.VotingSystem.VotingChannel.id};
+        return JSON.stringify(options);
+    }
+
+    /**
+     * string should look like:                                   
+     * "{"message": "id", "VotingSystem": "id"}"
+     * @param {String} options - string from JSON file
+     */
+    static fromJSON(options){
+        options = JSON.parse(options);
+        for(var i = 0; i < VotingSystemarray.length; i++){
+            if(VotingSystemarray[i].VotingChannel.id == options.VotingSystem){
+                return new Voter(searcmessage(options.message), VotingSystemarray[i]);
+            }
+        }
+    }
 }
 
 class Voter{
@@ -191,6 +210,16 @@ function searcmember(id){
         try{return members.resolve(id)}catch(error){};
     }
     return {id: id};
+}
+
+function searcmessage(id){
+    var guilds = client.guilds.cache.array();
+    for(var i = 0; i < guilds.length; i++){
+        var channels = guilds[i].channels;
+        for(var j = 0; j < channels.length; j++){
+            var messages = channels[j].messages
+            try{return message.resolve(id)}catch(error){};
+    }
 }
 
 function searchrole(id){
