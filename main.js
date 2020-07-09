@@ -10,7 +10,7 @@ const newVotingSystems= [];
 
 var VotingSystemarray = [];
 //time before pinging in ms || 24h = 86400000‬ms
-const pingtime = 5000;
+const pingtime = 10000;
 
 var options = JSON.parse(fs.readFileSync("options.json"));
 
@@ -26,6 +26,8 @@ class VotingSystem{
         this.ResultsChannel = ResultsChannel;
         this.Role = Role;
         this.VoteArray = VoteArray;
+
+        for(var i = 0; i < options.Systems.Votes.numberofVotingSystems; i++){VoteArray.push(VotingSystem.fromJSON(fs.readFileSync("Votes/" + options.Systems.fileids[i] + ".json")))}
     }
 
     toJSON(){
@@ -49,6 +51,9 @@ class VotingSystem{
         message.react('👎');
         this.VoteArray.push(new Vote(message, this));
         fs.writeFileSync("VotingSystem/" + this.VotingChannel.id + ".json", this.toJSON());
+        options.Systems.Votges.numberofVotingSystems++;
+        options.Systems.Votes.fileids.push(newVotingSystems[i].voting.id);
+        fs.writeFileSync("options.json", JSON.stringify(options));
     }
 }
 
@@ -66,7 +71,7 @@ class Vote{
         }else{
             this.votes = {pisitive: 0, abstains: 0, negative: 0}
         }
-        if(options.votes){
+        if(options.voters){
             this.voters = options.voters;
         }else{
             this.voters = [];
@@ -90,7 +95,7 @@ class Vote{
                 msg += rolemembers[i].toString() + ",\n";
             }
         }
-        this.message.channel.send(msg + "pleace vote!")
+        this.message.channel.send(msg + "pleace vote!");
     }
 
     updatevotes(){
@@ -248,8 +253,8 @@ function addVotingSystem(){
 
     for(var i = 0; i < newVotingSystems.length; i++){
         VotingSystemarray.push(new VotingSystem(newVotingSystems[i].voting, newVotingSystems[i].result)); 
-        options.numberofVotingSystems++;
-        options.fileids.push(newVotingSystems[i].voting.id);
+        options.Systems.numberofVotingSystems++;
+        options.Systems.fileids.push(newVotingSystems[i].voting.id);
         fs.writeFileSync("options.json", JSON.stringify(options));
         fs.writeFileSync("VotingSystem/" + newVotingSystems[i].voting.id + ".json", VotingSystemarray[VotingSystemarray.length - 1].toJSON());
         newVotingSystems[i].voting.send("Congratulations! Voting Bot joined the server! \n Please do not resist!");
@@ -259,9 +264,9 @@ function addVotingSystem(){
 
 client.on("ready", () => {
     console.log(`Logged in as ${client.user.tag}!`);
-    for(var i = 0; i < options.numberofVotingSystems; i++){VotingSystemarray.push(VotingSystem.fromJSON(fs.readFileSync("VotingSystem/" + options.fileids[i] + ".json")))}
+    for(var i = 0; i < options.Systems.numberofVotingSystems; i++){VotingSystemarray.push(VotingSystem.fromJSON(fs.readFileSync("VotingSystem/" + options.Systems.fileids[i] + ".json")))}
     if (newVotingSystems.length > 0) addVotingSystem();
-})
+});
 
 client.on("message", msg => {
     if(msg.member.user.id == client.user.id) return 0;
