@@ -132,6 +132,15 @@ class Vote{
             }
         }
         this.votes = {pisitive: this.message.reactions.resolve('👍').count, abstains: this.message.reactions.resolve('✋').count, negative: this.message.reactions.resolve('👎').count}
+
+        if(Date.now() - message.createdTimestamp > pingtime){
+            const rolemembers = this.VotingSystem.Role.members.array().length;
+            if(this.votes.positive > this.votes.negative + (rolemembers + this.voters.length)){
+
+            }else if(this.votes.negative >= this.votes.positive + this.votes.negative + (rolemembers + this.voters.length)){
+                
+            }
+        }
     }
 
     toJSON(){
@@ -310,7 +319,7 @@ client.on("messageReactionAdd", (messageReaction, User) => {
     for(var i = 0; i < VotingSystemarray.length; i ++){
         var Vote =VotingSystemarray.getVote(messageReaction.message);
         if(Vote){
-            Vote.updatevote()
+            Vote.updatevotes()
         }
     }
 })
