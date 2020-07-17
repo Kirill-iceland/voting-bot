@@ -30,6 +30,18 @@ class VotingSystem{
         for(var i = 0; i < options.Systems.Votes.numberofVotingSystems; i++){this.VoteArray.push(Vote.fromJSON(fs.readFileSync("Votes/" + options.Systems.Votes.fileids[i] + ".json"), this))}
     }
 
+    /**
+     * @param {Discord.Message} message - message with the vote
+     */
+    getVote(message){
+        for(var i = 0; i < this.VoteArray.length; i++){
+            if(message == this.VoteArray[i].message){
+                return this.VoteArray[i];
+            }
+        }
+        return null;
+    }
+
     toJSON(){
         const options = {voting: this.VotingChannel.id, result: this.ResultsChannel.id, role: this.Role.id};
         return JSON.stringify(options);
@@ -295,7 +307,12 @@ client.on("message", msg => {
 });
 
 client.on("messageReactionAdd", (messageReaction, User) => {
-
+    for(var i = 0; i < VotingSystemarray.length; i ++){
+        var Vote =VotingSystemarray.getVote(messageReaction.message);
+        if(Vote){
+            Vote.updatevote()
+        }
+    }
 })
 
 client.login(process.env.BOT_TOKEN);
