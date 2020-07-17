@@ -10,7 +10,7 @@ const newVotingSystems= [];
 
 var VotingSystemarray = [];
 //time before pinging in ms || 24h = 86400000‬ms
-const pingtime = 10000;
+const pingtime = 20000;
 
 var options = JSON.parse(fs.readFileSync("options.json"));
 
@@ -27,7 +27,7 @@ class VotingSystem{
         this.Role = Role;
         this.VoteArray = VoteArray;
 
-        for(var i = 0; i < options.Systems.Votes.numberofVotingSystems; i++){VoteArray.push(VotingSystem.fromJSON(fs.readFileSync("Votes/" + options.Systems.fileids[i] + ".json")))}
+        for(var i = 0; i < options.Systems.Votes.numberofVotingSystems; i++){this.VoteArray.push(Vote.fromJSON(fs.readFileSync("Votes/" + options.Systems.Votes.fileids[i] + ".json"), this))}
     }
 
     toJSON(){
@@ -51,8 +51,9 @@ class VotingSystem{
         message.react('👎');
         this.VoteArray.push(new Vote(message, this));
         fs.writeFileSync("VotingSystem/" + this.VotingChannel.id + ".json", this.toJSON());
-        options.Systems.Votges.numberofVotingSystems++;
-        options.Systems.Votes.fileids.push(newVotingSystems[i].voting.id);
+        fs.writeFileSync("Votes/" + this.VoteArray[this.VoteArray.length - 1].message.id + ".json", this.VoteArray[this.VoteArray.length - 1].toJSON());
+        options.Systems.Votes.numberofVotingSystems++;
+        options.Systems.Votes.fileids.push(this.VoteArray[this.VoteArray.length - 1].message.id);
         fs.writeFileSync("options.json", JSON.stringify(options));
     }
 }
@@ -131,16 +132,20 @@ class Vote{
      * "{"message": "id", "VotingSystem": "id"}"
      * @param {String} options - string from JSON file
      */
-    static fromJSON(options){
+    static async fromJSON(options, VotingSystem = false){
         options = JSON.parse(options);
-        for(var i = 0; i < VotingSystemarray.length; i++){
-            if(VotingSystemarray[i].VotingChannel.id == options.VotingSystem){
-                return new Voter(searcmessage(options.message), VotingSystemarray[i]);
+        if(VotingSystem){
+            return new Vote(await searcmessage(options.message), VotingSystem)
+        }else{
+            for(var i = 0; i < VotingSystemarray.length; i++){
+                if(VotingSystemarray[i].VotingChannel.id == options.VotingSystem){
+                    return new Vote(await searcmessage(options.message), VotingSystemarray[i]);
+                }
             }
         }
     }
 }
-
+                                                                          
 class Voter{
     /**
      * @param {Discord.GuildMember} GuildMember - Voter
@@ -217,13 +222,20 @@ function searcmember(id){
     return {id: id};
 }
 
-function searcmessage(id){
+
+async function searcmessage(id){
     var guilds = client.guilds.cache.array();
     for(var i = 0; i < guilds.length; i++){
-        var channels = guilds[i].channels;
+        var channels = guilds[i].channels.cache.array();
         for(var j = 0; j < channels.length; j++){
-            var messages = channels[j].messages
-            try{return message.resolve(id)}catch(error){};
+            if(channels[j].type == "text"){
+                var messages = channels[j].messages;
+                var _message;
+                try{await messages.fetch(id).then(message => _message = message)}catch{};
+                if(_message){
+                    return _message;
+                }
+            }   
         }
     }
 }
