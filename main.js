@@ -217,7 +217,8 @@ function searcmember(id){
     var guilds = client.guilds.cache.array();
     for(var i = 0; i < guilds.length; i++){
         var members = guilds[i].members;
-        try{return members.resolve(id)}catch(error){};
+        var member = members.resolve(id);
+        try{if(member){return member}}catch(error){};
     }
     return {id: id};
 }
@@ -244,7 +245,8 @@ function searchrole(id){
     var guilds = client.guilds.cache.array();
     for(var i = 0; i < guilds.length; i++){
         var roles = guilds[i].roles;
-        try{return roles.resolve(id)}catch(error){};
+        var role = roles.resolve(id);
+        try{if(role){return role}}catch(error){};
     }
 }
 
@@ -252,7 +254,8 @@ function searchchannel(id){
     var guilds = client.guilds.cache.array();
     for(var i = 0; i < guilds.length; i++){
         var channels = guilds[i].channels;
-        try{return channels.resolve(id)}catch(error){};
+        var channel = channels.resolve(id);
+        try{if(channel){return channel}}catch(error){};
     }
 }
 
