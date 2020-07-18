@@ -329,6 +329,7 @@ function addVotingSystem(){
         VotingSystemarray.push(new VotingSystem(newVotingSystems[i].voting, newVotingSystems[i].result, options.Systems.numberofVotingSystems)); 
         options.Systems.numberofVotingSystems++;
         options.Systems.fileids.push(newVotingSystems[i].voting.id);
+        options.Systems.Votes.push({numberofVotes:0, fileids:[]});
         fs.writeFileSync("options.json", JSON.stringify(options));
         fs.writeFileSync("VotingSystem/" + newVotingSystems[i].voting.id + ".json", VotingSystemarray[VotingSystemarray.length - 1].toJSON());
         newVotingSystems[i].voting.send("Congratulations! Voting Bot joined the server! \n Please do not resist!");
