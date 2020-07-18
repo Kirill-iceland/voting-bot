@@ -10,7 +10,7 @@ const newVotingSystems= [];
 
 var VotingSystemarray = [];
 //time before pinging in ms || 24h = 86400000‬ms
-const pingtime =10000;
+const pingtime = 10000;
 
 var options = JSON.parse(fs.readFileSync("options.json"));
 
