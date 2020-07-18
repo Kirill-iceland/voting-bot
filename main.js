@@ -5,12 +5,12 @@ const { Console, log } = require("console");
 const client = new Discord.Client();
 
 
-//Insert object to add new VotingSystems. Example: {voting: "725669865561653298", result: "725669928723808267", Role: } remove after json file is created
+//Insert object to add new VotingSystems. Example: {voting: "725669865561653298", result: "725669928723808267", Role: ""} remove after json file is created
 const newVotingSystems= [];
 
 var VotingSystemarray = [];
 //time before pinging in ms || 24h = 86400000‬ms
-const pingtime = 10000;
+const pingtime = 86400000;
 
 var options = JSON.parse(fs.readFileSync("options.json"));
 
@@ -86,7 +86,6 @@ class Vote{
     constructor(message, VotingSystem, options = {votes: [0, 0, 0], voters: []}){
         this.message = message;
         this.VotingSystem = VotingSystem;
-        console.log("this.message.content")
         if(options.votes){
             this.votes = {positive: options.votes[0], abstains: options.votes[1], negative: options.votes[2]}
         }else{
@@ -101,7 +100,6 @@ class Vote{
         if(Date.now() - message.createdTimestamp <= pingtime){
             setTimeout(() => {this.ping()}, pingtime - Date.now() + message.createdTimestamp);
         }
-        console.log(this.message.content)
     }
 
     ping(){
@@ -190,9 +188,7 @@ class Vote{
      */
     static async fromJSON(options, VotingSystem = false){
         options = JSON.parse(options);
-        console.log(options.message)
         if(VotingSystem){
-            console.log(options.message)
             return new Vote(await searcmessage(options.message), VotingSystem)
         }else{ 
             for(var i = 0; i < VotingSystemarray.length; i++){
@@ -292,7 +288,6 @@ async function searcmessage(id){
                 var _message;
                 try{await messages.fetch(id).then(message => {_message = message})}catch(error){};
                 if(_message){
-                    console.log(_message.content)
                     return _message;
                 }
             }   
@@ -334,6 +329,7 @@ function addVotingSystem(){
         fs.writeFileSync("VotingSystem/" + newVotingSystems[i].voting.id + ".json", VotingSystemarray[VotingSystemarray.length - 1].toJSON());
         newVotingSystems[i].voting.send("Congratulations! Voting Bot joined the server! \n Please do not resist!");
     }
+    console.log("Finished adding the new Voting Systems");
 }
 
 
