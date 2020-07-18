@@ -10,7 +10,7 @@ const newVotingSystems= [];
 
 var VotingSystemarray = [];
 //time before pinging in ms || 24h = 86400000‬ms
-const pingtime = 20000;
+const pingtime = 5000;
 
 var options = JSON.parse(fs.readFileSync("options.json"));
 
@@ -80,9 +80,9 @@ class Vote{
         this.message = message;
         this.VotingSystem = VotingSystem;
         if(options.votes){
-            this.votes = {pisitive: options.votes[0], abstains: options.votes[1], negative: options.votes[2]}
+            this.votes = {positive: options.votes[0], abstains: options.votes[1], negative: options.votes[2]}
         }else{
-            this.votes = {pisitive: 0, abstains: 0, negative: 0}
+            this.votes = {positive: 0, abstains: 0, negative: 0}
         }
         if(options.voters){
             this.voters = options.voters;
@@ -91,12 +91,12 @@ class Vote{
         }
 
         if(Date.now() - message.createdTimestamp <= pingtime){
-            setTimeout(() => {this.ping()}, Date.now() - message.createdTimestamp + pingtime);
+            setTimeout(() => {this.ping()}, pingtime - Date.now() + message.createdTimestamp);
         }
     }
 
     ping(){
-        this.updatevotes()
+        if(this.updatevotes())return 0;
         var msg = "";
         var rolemembers = this.VotingSystem.Role.members.array();
         for(let i = 0; i < rolemembers.length; i++){
@@ -114,33 +114,51 @@ class Vote{
     updatevotes(){
         var rolemembers = this.VotingSystem.Role.members.array();
         for(let i = 0; i < rolemembers.length; i++){
-            if(this.message.reactions.resolve('👍').users.resolve(rolemembers[i].user.id) || this.message.reactions.resolve('✋').users.resolve(rolemembers[i].user.id) || this.message.reactions.resolve('👎').users.resolve(rolemembers[i].user.id)){
-                var skip = false;
-                for(var j = 0; j < this.voters.length; j++){
-                    if(this.voters[j].Member == rolemembers[i]) skip = true;
-                }
-                if(!skip){
-                    this.voters.push(new Voter(rolemembers[i]))
-                    if(this.message.reactions.resolve('👍').users.resolve(rolemembers[i].user.id)){
-                        this.voters[this.voters.length - 1].updatevote(this, 0)
-                    }else if(this.message.reactions.resolve('✋').users.resolve(rolemembers[i].user.id)){
-                        this.voters[this.voters.length - 1].updatevote(this, 1)
-                    }else if(this.message.reactions.resolve('👎').users.resolve(rolemembers[i].user.id)){
-                        this.voters[this.voters.length - 1].updatevote(this, 2)
+            try{
+                if(this.message.reactions.resolve('👍').users.resolve(rolemembers[i].user.id) || this.message.reactions.resolve('✋').users.resolve(rolemembers[i].user.id) || this.message.reactions.resolve('👎').users.resolve(rolemembers[i].user.id)){
+                    var skip = false;
+                    for(var j = 0; j < this.voters.length; j++){
+                        if(this.voters[j].Member == rolemembers[i]) skip = true;
+                    }
+                    if(!skip){
+                        this.voters.push(new Voter(rolemembers[i]))
+                        if(this.message.reactions.resolve('👍').users.resolve(rolemembers[i].user.id)){
+                            this.voters[this.voters.length - 1].updatevote(this, 0)
+                        }else if(this.message.reactions.resolve('✋').users.resolve(rolemembers[i].user.id)){
+                            this.voters[this.voters.length - 1].updatevote(this, 1)
+                        }else if(this.message.reactions.resolve('👎').users.resolve(rolemembers[i].user.id)){
+                            this.voters[this.voters.length - 1].updatevote(this, 2)
+                        }
                     }
                 }
-            }
+            }catch{console.error()}
         }
-        this.votes = {pisitive: this.message.reactions.resolve('👍').count, abstains: this.message.reactions.resolve('✋').count, negative: this.message.reactions.resolve('👎').count}
+        try{this.votes = {positive: this.message.reactions.resolve('👍').count, abstains: this.message.reactions.resolve('✋').count, negative: this.message.reactions.resolve('👎').count}}catch{}
 
-        if(Date.now() - message.createdTimestamp > pingtime){
+        if(Date.now() - this.message.createdTimestamp > pingtime){
             const rolemembers = this.VotingSystem.Role.members.array().length;
-            if(this.votes.positive > this.votes.negative + (rolemembers + this.voters.length)){
-
-            }else if(this.votes.negative >= this.votes.positive + this.votes.negative + (rolemembers + this.voters.length)){
-                
+            if(this.votes.positive > this.votes.negative + (rolemembers - this.voters.length)){
+                this.finish(true);
+                return true;
+            }else if(this.votes.negative >= this.votes.positive + (rolemembers - this.voters.length)){
+                this.finish(false);
+                return true;
             }
         }
+        return false;
+    }
+
+    /**
+     * @param {Boolean} result - true for 👍 and false for 👎
+     */
+    finish(result){
+        const rolemembers = this.VotingSystem.Role.members.array().length;
+        if(result){
+            this.VotingSystem.ResultsChannel.send(this.message.content + " voted onto the island (" + (this.votes.positive - 1) + "," + (this.votes.abstains - 1) + "," + (this.votes.negative - 1) + ";" + (rolemembers - this.voters.length) + ")")
+        }else{
+            this.VotingSystem.ResultsChannel.send(this.message.content + " yeeeted of the island (" + (this.votes.positive - 1) + "," + (this.votes.abstains - 1) + "," + (this.votes.negative - 1) + ";" + (rolemembers - this.voters.length) + ")")
+        }
+        this.message.delete();
     }
 
     toJSON(){
@@ -316,8 +334,9 @@ client.on("message", msg => {
 });
 
 client.on("messageReactionAdd", (messageReaction, User) => {
+    if(User == client.user)return 0;
     for(var i = 0; i < VotingSystemarray.length; i ++){
-        var Vote =VotingSystemarray.getVote(messageReaction.message);
+        var Vote = VotingSystemarray[i].getVote(messageReaction.message);
         if(Vote){
             Vote.updatevotes()
         }
