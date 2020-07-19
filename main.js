@@ -28,8 +28,6 @@ class VotingSystem{
         this.Role = Role;
         this.nuberoftheVotingSystem = nuberoftheVotingSystem;
         this.VoteArray = VoteArray;
-
-        this.getVotesfromJSON()
     }
 
     async getVotesfromJSON(){
@@ -59,9 +57,11 @@ class VotingSystem{
      * @param {String} options - string from JSON file
      * @param {Number} nuberoftheVotingSystem - what is the number in the opton.json
      */
-    static fromJSON(options, nuberoftheVotingSystem){
+    static async fromJSON(options, nuberoftheVotingSystem){
         options = JSON.parse(options);
-        return new VotingSystem(searchchannel(options.voting), searchchannel(options.result), searchrole(options.role), nuberoftheVotingSystem);
+        var thisnewVotingSystem = new VotingSystem(searchchannel(options.voting), searchchannel(options.result), searchrole(options.role), nuberoftheVotingSystem);
+        await thisnewVotingSystem.getVotesfromJSON();
+        return thisnewVotingSystem;
     }
 
     addVote(message){
@@ -333,10 +333,11 @@ function addVotingSystem(){
 }
 
 
-client.on("ready", () => {
+client.on("ready", async () => {
     console.log(`Logged in as ${client.user.tag}!`);
-    for(var i = 0; i < options.Systems.numberofVotingSystems; i++){VotingSystemarray.push(VotingSystem.fromJSON(fs.readFileSync("VotingSystem/" + options.Systems.fileids[i] + ".json"), i))}
+    for(var i = 0; i < options.Systems.numberofVotingSystems; i++){VotingSystemarray.push(await VotingSystem.fromJSON(fs.readFileSync("VotingSystem/" + options.Systems.fileids[i] + ".json"), i))}
     if (newVotingSystems.length > 0) addVotingSystem();
+    console.log(VotingSystemarray)
 });
 
 client.on("message", msg => {
