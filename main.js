@@ -337,7 +337,6 @@ client.on("ready", async () => {
     console.log(`Logged in as ${client.user.tag}!`);
     for(var i = 0; i < options.Systems.numberofVotingSystems; i++){VotingSystemarray.push(await VotingSystem.fromJSON(fs.readFileSync("VotingSystem/" + options.Systems.fileids[i] + ".json"), i))}
     if (newVotingSystems.length > 0) addVotingSystem();
-    console.log(VotingSystemarray)
 });
 
 client.on("message", msg => {
