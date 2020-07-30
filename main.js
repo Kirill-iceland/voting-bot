@@ -318,10 +318,11 @@ function addVotingSystem(){
     for(var k = 0; k < newVotingSystems.length; k++){
         newVotingSystems[k].voting = searchchannel(newVotingSystems[k].voting);
         newVotingSystems[k].result = searchchannel(newVotingSystems[k].result);
+        newVotingSystems[k].role = searchrole(newVotingSystems[k].role);
     }
 
     for(var i = 0; i < newVotingSystems.length; i++){
-        VotingSystemarray.push(new VotingSystem(newVotingSystems[i].voting, newVotingSystems[i].result, options.Systems.numberofVotingSystems)); 
+        VotingSystemarray.push(new VotingSystem(newVotingSystems[i].voting, newVotingSystems[i].result, newVotingSystems[i].role, options.Systems.numberofVotingSystems)); 
         options.Systems.numberofVotingSystems++;
         options.Systems.fileids.push(newVotingSystems[i].voting.id);
         options.Systems.Votes.push({numberofVotes:0, fileids:[]});
