@@ -10,7 +10,7 @@ const newVotingSystems= [];
 
 var VotingSystemarray = [];
 //time before pinging in ms || 24h = 86400000‬ms
-const pingtime = 86400000;
+const pingtime = 10000;
 
 var options = JSON.parse(fs.readFileSync("options.json"));
 
@@ -19,15 +19,17 @@ class VotingSystem{
     * @param {Discord.TextChannel} VotingChannel - Voting Channel
     * @param {Discord.TextChannel} ResultsChannel - Results Channel
     * @param {Discord.Role} Role - Voting Role
-    * @param {Array} VoteArray - a Vote Array (optional)
     * @param {Number} nuberoftheVotingSystem - what is the number in the opton.json
+    * @param {Number} UpdateTimestap - time sinse votes were updated
+    * @param {Array<Vote>} VoteArray - a Vote Array (optional)
     */
-    constructor(VotingChannel, ResultsChannel, Role, nuberoftheVotingSystem, VoteArray = []){
+    constructor(VotingChannel, ResultsChannel, Role, nuberoftheVotingSystem, UpdateTimestap = Date.now(), VoteArray = []){
         this.VotingChannel = VotingChannel;
         this.ResultsChannel = ResultsChannel;
         this.Role = Role;
         this.nuberoftheVotingSystem = nuberoftheVotingSystem;
         this.VoteArray = VoteArray;
+        this.UpdateTimestap = UpdateTimestap;
     }
 
     async getVotesfromJSON(){
@@ -46,8 +48,18 @@ class VotingSystem{
         return null;
     }
 
+    async checkforofflinevotes(){
+        var messages;
+        await this.VotingChannel.messages.fetch({ limit: 10 }).then(cache => {messages = cache.array()}).catch(e => console.error(e))
+        for(var i = messages.length - 1; i >= 0; i--){
+            if(!messages[i].deleted && messages[i].createdTimestamp > this.UpdateTimestap && messages[i].content.substring(0, 5).toLowerCase() == "!vote"){
+                await this.addVote(messages[i])
+            }
+        }
+    }
+
     toJSON(){
-        const options = {voting: this.VotingChannel.id, result: this.ResultsChannel.id, role: this.Role.id};
+        const options = {voting: this.VotingChannel.id, result: this.ResultsChannel.id, role: this.Role.id, UpdateTimestap: this.UpdateTimestap};
         return JSON.stringify(options);
     }
 
@@ -59,16 +71,25 @@ class VotingSystem{
      */
     static async fromJSON(options, nuberoftheVotingSystem){
         options = JSON.parse(options);
-        var thisnewVotingSystem = new VotingSystem(searchchannel(options.voting), searchchannel(options.result), searchrole(options.role), nuberoftheVotingSystem);
+        var thisnewVotingSystem = new VotingSystem(searchchannel(options.voting), searchchannel(options.result), searchrole(options.role), nuberoftheVotingSystem, options.UpdateTimestap);
         await thisnewVotingSystem.getVotesfromJSON();
+        await thisnewVotingSystem.checkforofflinevotes();
         return thisnewVotingSystem;
     }
 
-    addVote(message){
+    /**
+     * 
+     * @param {Discord.Message} _message 
+     */
+    async addVote(_message){
+        var message = await _message.channel.send(_message.content.substring(5)).catch(e => console.error(e));
+        _message.delete();
+        if(message.deleted)return 0;
         message.react('👍');
         message.react('✋');
         message.react('👎');
         this.VoteArray.push(new Vote(message, this));
+        this.UpdateTimestap = Date.now();
         fs.writeFileSync("VotingSystem/" + this.VotingChannel.id + ".json", this.toJSON());
         fs.writeFileSync("Votes/" + this.VoteArray[this.VoteArray.length - 1].message.id + ".json", this.VoteArray[this.VoteArray.length - 1].toJSON());
         options.Systems.Votes[this.nuberoftheVotingSystem].numberofVotes++;
@@ -86,6 +107,7 @@ class Vote{
     constructor(message, VotingSystem, options = {votes: [0, 0, 0], voters: []}){
         this.message = message;
         this.VotingSystem = VotingSystem;
+        this.memberstoping = [];
         if(options.votes){
             this.votes = {positive: options.votes[0], abstains: options.votes[1], negative: options.votes[2]}
         }else{
@@ -105,20 +127,14 @@ class Vote{
     ping(){
         if(this.updatevotes())return 0;
         var msg = "";
-        var rolemembers = this.VotingSystem.Role.members.array();
-        for(let i = 0; i < rolemembers.length; i++){
-            var skip = false;
-            for(var j = 0; j < this.voters.length; j++){
-                if(this.voters[j].Member == rolemembers[i]) skip = true;
-            }
-            if(!skip){
-                msg += rolemembers[i].toString() + ",\n";
-            }
+        for(let i = 0; i < this.rolememberstoping.length; i++){
+            msg += rolememberstoping[i].toString() + ",\n";
         }
         this.message.channel.send(msg + "pleace vote!");
     }
 
     updatevotes(){
+        this.memberstoping = [];
         var rolemembers = this.VotingSystem.Role.members.array();
         for(let i = 0; i < rolemembers.length; i++){
             try{
@@ -137,6 +153,8 @@ class Vote{
                             this.voters[this.voters.length - 1].updatevote(this, 2)
                         }
                     }
+                }else{
+                    this.memberstoping.push(rolemembers[i])
                 }
             }catch{console.error()}
         }
@@ -165,6 +183,17 @@ class Vote{
         }else{
             this.VotingSystem.ResultsChannel.send(this.message.content + " yeeeted of the island (" + (this.votes.positive - 1) + "," + (this.votes.abstains - 1) + "," + (this.votes.negative - 1) + ";" + (rolemembers - this.voters.length) + ")")
         }
+        for(var i = 0; i < options.Systems.Votes[this.VotingSystem.nuberoftheVotingSystem].numberofVotes; i++){
+            if(options.Systems.Votes[this.VotingSystem.nuberoftheVotingSystem].fileids[i] == this.message.id){
+                options.Systems.Votes[this.VotingSystem.nuberoftheVotingSystem].fileids.splice(i, 1);
+                options.Systems.Votes[this.VotingSystem.nuberoftheVotingSystem].numberofVotes--;
+                fs.writeFileSync("options.json", JSON.stringify(options));
+            }
+        }
+        this.message.delete();
+    }
+
+    delete(){
         for(var i = 0; i < options.Systems.Votes[this.VotingSystem.nuberoftheVotingSystem].numberofVotes; i++){
             if(options.Systems.Votes[this.VotingSystem.nuberoftheVotingSystem].fileids[i] == this.message.id){
                 options.Systems.Votes[this.VotingSystem.nuberoftheVotingSystem].fileids.splice(i, 1);
@@ -261,10 +290,9 @@ function checkchannel(id){
             return ["voting", i];
         }else if(VotingSystemarray[i].ResultsChannel.id == id){
             return ["result", i];
-        }else{
-            return ["notingfound"]
         }
     }
+    return ["notingfound"];
 }
 
 function searcmember(id){
@@ -342,6 +370,7 @@ client.on("ready", async () => {
 
 client.on("message", msg => {
     if(msg.member.user.id == client.user.id) return 0;
+    if(msg.content.substring(0, 5).toLowerCase() != "!vote") return 0;
     if(msg.content.substring(0, 7).toLowerCase() == "notvote") return 0;
     // console.log(msg.channel);
 
