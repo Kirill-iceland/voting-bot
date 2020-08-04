@@ -342,12 +342,12 @@ client.on("ready", async () => {
 
 client.on("message", msg => {
     if(msg.member.user.id == client.user.id) return 0;
-    if(msg.content.substring(0, 7).toLowerCase() == "notvote") return 0;
-    // console.log(msg.channel);
-
-    //fixes problem with people using different emojis
-    if(checkchannel(msg.channel.id)[0] == "voting"){
-        VotingSystemarray[checkchannel(msg.channel.id)[1]].addVote(msg);
+    // requires !vote or !Vote or !VOTE to proceed a vote
+    if(msg.content.startsWith("!vote ") || msg.content.startsWith("!Vote ") || msg.content.startsWith("!VOTE ")) {
+        //fixes problem with people using different emojis
+        if(checkchannel(msg.channel.id)[0] == "voting"){
+            VotingSystemarray[checkchannel(msg.channel.id)[1]].addVote(msg.substr(6));
+        }
     }
 });
 
