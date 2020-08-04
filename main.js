@@ -94,7 +94,7 @@ class VotingSystem{
             )
             .setImage('https://i.imgur.com/wSTFkRM.png')
             .setTimestamp()
-            .setFooter('Thank you for voting!, 'https://i.imgur.com/wSTFkRM.png');
+            .setFooter('Thank you for voting!', 'https://i.imgur.com/wSTFkRM.png');
         
         channel.send(embeded_vote).then(sentEmbed => {
             // now instead of the bot reacting to the message the user sent it will react to the embeded message that the bot sent.
