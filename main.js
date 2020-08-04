@@ -77,24 +77,46 @@ class VotingSystem{
         return thisnewVotingSystem;
     }
 
-    /**
-     * 
-     * @param {Discord.Message} _message 
-     */
-    async addVote(_message){
-        var message = await _message.channel.send(_message.content.substring(5)).catch(e => console.error(e));
-        _message.delete();
+    addVote(message){
         if(message.deleted)return 0;
-        message.react('👍');
-        message.react('✋');
-        message.react('👎');
-        this.VoteArray.push(new Vote(message, this));
+        //embeded object that the bot sends
+        const embeded_vote = new Discord.MessageEmbed()
+            .setColor('#0099ff')
+            .setTitle('Vote')
+            .setURL('https://github.com/Kirill-iceland/voting-bot')
+            .setAuthor('Voting Bot', 'https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png', 'https://github.com/Kirill-iceland/voting-bot')
+            .setDescription('Please vote for the following, or you will be pinged in 24 hours')
+            .setThumbnail('https://i.imgur.com/wSTFkRM.png')
+            .addFields(
+                { name: '\u200B', value: '\u200B' },
+                { name: 'Vote', value: message.content.substring(5), inline: true },
+                { name: 'What to vote', value: '👍 for yes, ✋ to abstain, 👎 for no.', inline: true },
+            )
+            .setImage('https://i.imgur.com/wSTFkRM.png')
+            .setTimestamp()
+            .setFooter('Thank you for voting!, 'https://i.imgur.com/wSTFkRM.png');
+        
+        channel.send(embeded_vote).then(sentEmbed => {
+            // now instead of the bot reacting to the message the user sent it will react to the embeded message that the bot sent.
+            sentEmbed.react("👍")
+            sentEmbed.react("✋")
+            sentEmbed.react("👎")
+        });
+        //now the voting system relies on the embeded bot message not the user message
+        this.VoteArray.push(new Vote(embeded_vote, this));
+        message.delete();
         this.UpdateTimestap = Date.now();
         fs.writeFileSync("VotingSystem/" + this.VotingChannel.id + ".json", this.toJSON());
+        //again the voting system relies on the embeded bot message not the user message
         fs.writeFileSync("Votes/" + this.VoteArray[this.VoteArray.length - 1].message.id + ".json", this.VoteArray[this.VoteArray.length - 1].toJSON());
         options.Systems.Votes[this.nuberoftheVotingSystem].numberofVotes++;
         options.Systems.Votes[this.nuberoftheVotingSystem].fileids.push(this.VoteArray[this.VoteArray.length - 1].message.id);
         fs.writeFileSync("options.json", JSON.stringify(options));
+        /* 
+            we should really remove what the users message reacts and have some sort of count that is stored in the int and updated when a new vote comes in.
+            read here, https://discordjs.guide/popular-topics/embeds.html#editing-the-embedded-message-content.
+            No, I dont want to do this becasue I dont want to mess anything more up.
+        */
     }
 }
 
