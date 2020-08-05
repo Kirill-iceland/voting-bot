@@ -393,7 +393,6 @@ client.on("ready", async () => {
 client.on("message", msg => {
     if(msg.member.user.id == client.user.id) return 0;
     if(msg.content.substring(0, 5).toLowerCase() != "!vote") return 0;
-    if(msg.content.substring(0, 7).toLowerCase() == "notvote") return 0;
     // console.log(msg.channel);
 
     //fixes problem with people using different emojis
