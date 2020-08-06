@@ -5,6 +5,9 @@ const { Console, log } = require("console");
 const client = new Discord.Client();
 
 
+//insert link to a image that will show up when u vote
+var theimage = 'https://i.imgur.com/277OAeU.png';
+
 //Insert object to add new VotingSystems. Example: {voting: "725669865561653298", result: "725669928723808267", Role: ""} remove after json file is created
 const newVotingSystems= [];
 
@@ -77,33 +80,33 @@ class VotingSystem{
         return thisnewVotingSystem;
     }
 
-    addVote(message){
+    async addVote(message){
         if(message.deleted)return 0;
         //embeded object that the bot sends
         const embeded_vote = new Discord.MessageEmbed()
             .setColor('#0099ff')
-            .setTitle('Vote')
-            .setURL('https://github.com/Kirill-iceland/voting-bot')
+            .setTitle(message.content.substring(5))
+            .setURL()
             .setAuthor('Voting Bot', 'https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png', 'https://github.com/Kirill-iceland/voting-bot')
             .setDescription('Please vote for the following, or you will be pinged in 24 hours')
-            .setThumbnail('https://i.imgur.com/wSTFkRM.png')
+            .setThumbnail(theimage)
             .addFields(
-                { name: '\u200B', value: '\u200B' },
-                { name: 'Vote', value: message.content.substring(5), inline: true },
-                { name: 'What to vote', value: '👍 for yes, ✋ to abstain, 👎 for no.', inline: true },
+                { name: 'What to vote', value: "👍 for yes, ✋ to abstain, 👎 for no.", inline: true },
             )
-            .setImage('https://i.imgur.com/wSTFkRM.png')
+            .setImage(theimage)
             .setTimestamp()
-            .setFooter('Thank you for voting!', 'https://i.imgur.com/wSTFkRM.png');
+            .setFooter('Thank you for voting!', theimage);
         
-        channel.send(embeded_vote).then(sentEmbed => {
+        var embeded_message;
+        await message.channel.send(embeded_vote).then(sentEmbed => {
             // now instead of the bot reacting to the message the user sent it will react to the embeded message that the bot sent.
-            sentEmbed.react("👍")
-            sentEmbed.react("✋")
-            sentEmbed.react("👎")
+            sentEmbed.react("👍");
+            sentEmbed.react("✋");
+            sentEmbed.react("👎");
+            embeded_message = sentEmbed;
         });
         //now the voting system relies on the embeded bot message not the user message
-        this.VoteArray.push(new Vote(embeded_vote, this));
+        this.VoteArray.push(new Vote(embeded_message, this));
         message.delete();
         this.UpdateTimestap = Date.now();
         fs.writeFileSync("VotingSystem/" + this.VotingChannel.id + ".json", this.toJSON());
@@ -149,8 +152,8 @@ class Vote{
     ping(){
         if(this.updatevotes())return 0;
         var msg = "";
-        for(let i = 0; i < this.rolememberstoping.length; i++){
-            msg += rolememberstoping[i].toString() + ",\n";
+        for(let i = 0; i < this.memberstoping.length; i++){
+            msg += this.memberstoping[i].toString() + ",\n";
         }
         this.message.channel.send(msg + "pleace vote!");
     }
@@ -199,12 +202,34 @@ class Vote{
      * @param {Boolean} result - true for 👍 and false for 👎
      */
     finish(result){
-        const rolemembers = this.VotingSystem.Role.members.array().length;
+        var embeded_vote;
         if(result){
-            this.VotingSystem.ResultsChannel.send(this.message.content + " voted onto the island (" + (this.votes.positive - 1) + "," + (this.votes.abstains - 1) + "," + (this.votes.negative - 1) + ";" + (rolemembers - this.voters.length) + ")")
+            embeded_vote = new Discord.MessageEmbed()
+            .setColor('#0ff00')
+            .setTitle(this.message.embeds[0].title + " was voted onto the island")
+            .setAuthor('Voting Bot', 'https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png', 'https://github.com/Kirill-iceland/voting-bot')
+            .setDescription("👍: " + (this.votes.positive - 1) + ", ✋: " + (this.votes.abstains - 1) + ", 👎: " + (this.votes.negative - 1))
+            .setThumbnail(theimage)
+            .setFooter('Thank you for voting!', theimage);
         }else{
-            this.VotingSystem.ResultsChannel.send(this.message.content + " yeeeted of the island (" + (this.votes.positive - 1) + "," + (this.votes.abstains - 1) + "," + (this.votes.negative - 1) + ";" + (rolemembers - this.voters.length) + ")")
+            embeded_vote = new Discord.MessageEmbed()
+            .setColor('#ff0000')
+            .setTitle(this.message.embeds[0].title + " was yeeeted of the island")
+            .setAuthor('Voting Bot', 'https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png', 'https://github.com/Kirill-iceland/voting-bot')
+            .setDescription("👍: " + (this.votes.positive - 1) + ", ✋: " + (this.votes.abstains - 1) + ", 👎: " + (this.votes.negative - 1))
+            .setThumbnail(theimage)
+            .setFooter('Thank you for voting!', theimage);
         }
+        if(this.memberstoping > 0){
+            var msg = "";
+            for(let i = 0; i < this.memberstoping.length; i++){
+                msg += this.memberstoping[i].displayName + ",\n";
+            }
+            embeded_vote.addField("People who did not vote:", msg.substring(0, msg.length - 2), false);
+        }
+
+        this.VotingSystem.ResultsChannel.send(embeded_vote)
+        
         for(var i = 0; i < options.Systems.Votes[this.VotingSystem.nuberoftheVotingSystem].numberofVotes; i++){
             if(options.Systems.Votes[this.VotingSystem.nuberoftheVotingSystem].fileids[i] == this.message.id){
                 options.Systems.Votes[this.VotingSystem.nuberoftheVotingSystem].fileids.splice(i, 1);
@@ -317,6 +342,16 @@ function checkchannel(id){
     return ["notingfound"];
 }
 
+function searchvote(id){
+    for(var i = 0; i < VotingSystemarray.length; i++){
+        for(var j = 0; j < VotingSystemarray[i].VoteArray.length; j++){
+            if(VotingSystemarray[i].VoteArray[j].message.id = id){
+                return VotingSystemarray[i].VoteArray[j];
+            }
+        }
+    }
+}
+
 function searcmember(id){
     var guilds = client.guilds.cache.array();
     for(var i = 0; i < guilds.length; i++){
@@ -392,8 +427,11 @@ client.on("ready", async () => {
 
 client.on("message", msg => {
     if(msg.member.user.id == client.user.id) return 0;
-    if(msg.content.substring(0, 5).toLowerCase() != "!vote") return 0;
     if(msg.content.substring(0, 7).toLowerCase() == "notvote") return 0;
+    if(msg.content.substring(0, 7).toLowerCase() == "!delete" && searchvote(msg.content.substring(7))){
+        searchvote(msg.content.substring(7)).delete()
+    }
+    if(msg.content.substring(0, 5).toLowerCase() != "!vote") return 0;
     // console.log(msg.channel);
 
     //fixes problem with people using different emojis
