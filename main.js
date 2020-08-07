@@ -80,15 +80,21 @@ class VotingSystem{
         return thisnewVotingSystem;
     }
 
+    /**
+     * 
+     * @param {Discord.Message} message 
+     */
     async addVote(message){
         if(message.deleted)return 0;
+        var attachments = message.attachments.array();
+
         //embeded object that the bot sends
         const embeded_vote = new Discord.MessageEmbed()
             .setColor('#0099ff')
             .setTitle(message.content.substring(5))
             .setURL()
             .setAuthor('Voting Bot', 'https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png', 'https://github.com/Kirill-iceland/voting-bot')
-            .setDescription('Please vote for the following, or you will be pinged in 24 hours')
+            .setDescription('\u200B\nPlease vote for the following, or you will be pinged in 24 hours')
             .setThumbnail(theimage)
             .addFields(
                 { name: 'What to vote', value: "👍 for yes, ✋ to abstain, 👎 for no.", inline: true },
@@ -97,6 +103,14 @@ class VotingSystem{
             .setTimestamp()
             .setFooter('Thank you for voting!', theimage);
         
+        for(var i = 0; i < attachments.length; i++){
+            if(attachments[i].height){
+                embeded_vote.setImage(attachments[i].proxyURL)
+            }else{
+                embeded_vote.attachFiles(attachments[i])
+            }
+        }
+
         var embeded_message;
         await message.channel.send(embeded_vote).then(sentEmbed => {
             // now instead of the bot reacting to the message the user sent it will react to the embeded message that the bot sent.
