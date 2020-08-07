@@ -133,6 +133,7 @@ class Vote{
         this.message = message;
         this.VotingSystem = VotingSystem;
         this.memberstoping = [];
+        this.pingmessage = false;
         if(options.votes){
             this.votes = {positive: options.votes[0], abstains: options.votes[1], negative: options.votes[2]}
         }else{
@@ -150,12 +151,16 @@ class Vote{
     }
 
     ping(){
+        if(this.message.deleted)return 0;
         if(this.updatevotes())return 0;
         var msg = "";
         for(let i = 0; i < this.memberstoping.length; i++){
             msg += this.memberstoping[i].toString() + ",\n";
         }
-        this.message.channel.send(msg + "pleace vote!");
+        this.message.channel.send(msg + "pleace vote!").then(_msg => {
+            this.pingmessage = _msg;
+            fs.writeFileSync("Votes/" + this.message.id + ".json", this.toJSON())
+        });
     }
 
     updatevotes(){
@@ -220,7 +225,7 @@ class Vote{
             .setThumbnail(theimage)
             .setFooter('Thank you for voting!', theimage);
         }
-        if(this.memberstoping > 0){
+        if(this.memberstoping.length > 0){
             var msg = "";
             for(let i = 0; i < this.memberstoping.length; i++){
                 msg += this.memberstoping[i].displayName + ",\n";
@@ -238,6 +243,9 @@ class Vote{
             }
         }
         this.message.delete();
+        if(this.pingmessage){
+            this.pingmessage.delete();
+        }
     }
 
     delete(){
@@ -248,28 +256,35 @@ class Vote{
                 fs.writeFileSync("options.json", JSON.stringify(options));
             }
         }
+        if(this.pingmessage){
+            this.pingmessage.delete();
+        }
         this.message.delete();
     }
 
     toJSON(){
-        const options = {message: this.message.id, VotingSystem: this.VotingSystem.VotingChannel.id};
+        const options = {message: this.message.id, VotingSystem: this.VotingSystem.VotingChannel.id, pingmessage: this.pingmessage.id};
         return JSON.stringify(options);
     }
 
     /**
      * string should look like:                                   
-     * "{"message": "id", "VotingSystem": "id"}"
+     * ``"{"message": "id", "VotingSystem": "id"}"``
      * @param {String} options - string from JSON file
      * @param {VotingSystem} VotingSystem - Voting System that has this Vote (optional)
      */
     static async fromJSON(options, VotingSystem = false){
         options = JSON.parse(options);
         if(VotingSystem){
-            return new Vote(await searcmessage(options.message), VotingSystem)
+            var newVote = new Vote(await searcmessage(options.message), VotingSystem);
+            newVote.pingmessage = options.pingmessage;
+            return newVote;
         }else{ 
             for(var i = 0; i < VotingSystemarray.length; i++){
                 if(VotingSystemarray[i].VotingChannel.id == options.VotingSystem){
-                    return new Vote(await searcmessage(options.message), VotingSystemarray[i]);
+                    var newVote = new Vote(await searcmessage(options.message), VotingSystemarray[i]);
+                    newVote.pingmessage = options.pingmessage;
+                    return newVote;
                 }
             }
         }
@@ -345,7 +360,7 @@ function checkchannel(id){
 function searchvote(id){
     for(var i = 0; i < VotingSystemarray.length; i++){
         for(var j = 0; j < VotingSystemarray[i].VoteArray.length; j++){
-            if(VotingSystemarray[i].VoteArray[j].message.id = id){
+            if(VotingSystemarray[i].VoteArray[j].message.id == id){
                 return VotingSystemarray[i].VoteArray[j];
             }
         }
@@ -428,13 +443,16 @@ client.on("ready", async () => {
 client.on("message", msg => {
     if(msg.member.user.id == client.user.id) return 0;
     if(msg.content.substring(0, 7).toLowerCase() == "notvote") return 0;
-    if(msg.content.substring(0, 7).toLowerCase() == "!delete" && searchvote(msg.content.substring(7))){
-        searchvote(msg.content.substring(7)).delete()
+    if(msg.content.substring(0, 7).toLowerCase() == "!delete" && searchvote(msg.content.substring(7).replace(/ /g, ""))){
+        if(msg.member.hasPermission("ADMINISTRATOR")){
+            searchvote(msg.content.substring(7).replace(/ /g, "")).delete()
+        }else{
+            msg.reply("you dont have the permisions to use this command!")
+        }
     }
     if(msg.content.substring(0, 5).toLowerCase() != "!vote") return 0;
     // console.log(msg.channel);
 
-    //fixes problem with people using different emojis
     if(checkchannel(msg.channel.id)[0] == "voting"){
         VotingSystemarray[checkchannel(msg.channel.id)[1]].addVote(msg);
     }
