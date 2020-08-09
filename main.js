@@ -5,6 +5,9 @@ const { Console, log } = require("console");
 const client = new Discord.Client();
 
 
+//insert link to a image that will show up when u vote
+var theimage = 'https://i.imgur.com/277OAeU.png';
+
 //Insert object to add new VotingSystems. Example: {voting: "725669865561653298", result: "725669928723808267", Role: ""} remove after json file is created
 const newVotingSystems= [];
 
@@ -77,33 +80,47 @@ class VotingSystem{
         return thisnewVotingSystem;
     }
 
-    addVote(message){
+    /**
+     * 
+     * @param {Discord.Message} message 
+     */
+    async addVote(message){
         if(message.deleted)return 0;
+        var attachments = message.attachments.array();
+
         //embeded object that the bot sends
         const embeded_vote = new Discord.MessageEmbed()
             .setColor('#0099ff')
-            .setTitle('Vote')
-            .setURL('https://github.com/Kirill-iceland/voting-bot')
+            .setTitle(message.content.substring(5))
+            .setURL()
             .setAuthor('Voting Bot', 'https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png', 'https://github.com/Kirill-iceland/voting-bot')
-            .setDescription('Please vote for the following, or you will be pinged in 24 hours')
-            .setThumbnail('https://i.imgur.com/wSTFkRM.png')
+            .setDescription('\u200B\nPlease vote for the following, or you will be pinged in 24 hours')
+            .setThumbnail(theimage)
             .addFields(
-                { name: '\u200B', value: '\u200B' },
-                { name: 'Vote', value: message.content.substring(5), inline: true },
-                { name: 'What to vote', value: '👍 for yes, ✋ to abstain, 👎 for no.', inline: true },
+                { name: 'What to vote', value: "👍 for yes, ✋ to abstain, 👎 for no.", inline: true },
             )
-            .setImage('https://i.imgur.com/wSTFkRM.png')
+            .setImage(theimage)
             .setTimestamp()
-            .setFooter('Thank you for voting!', 'https://i.imgur.com/wSTFkRM.png');
+            .setFooter('Thank you for voting!', theimage);
         
-        channel.send(embeded_vote).then(sentEmbed => {
+        for(var i = 0; i < attachments.length; i++){
+            if(attachments[i].height){
+                embeded_vote.setImage(attachments[i].proxyURL)
+            }else{
+                embeded_vote.attachFiles(attachments[i])
+            }
+        }
+
+        var embeded_message;
+        await message.channel.send(embeded_vote).then(sentEmbed => {
             // now instead of the bot reacting to the message the user sent it will react to the embeded message that the bot sent.
-            sentEmbed.react("👍")
-            sentEmbed.react("✋")
-            sentEmbed.react("👎")
+            sentEmbed.react("👍");
+            sentEmbed.react("✋");
+            sentEmbed.react("👎");
+            embeded_message = sentEmbed;
         });
         //now the voting system relies on the embeded bot message not the user message
-        this.VoteArray.push(new Vote(embeded_vote, this));
+        this.VoteArray.push(new Vote(embeded_message, this));
         message.delete();
         this.UpdateTimestap = Date.now();
         fs.writeFileSync("VotingSystem/" + this.VotingChannel.id + ".json", this.toJSON());
@@ -130,6 +147,7 @@ class Vote{
         this.message = message;
         this.VotingSystem = VotingSystem;
         this.memberstoping = [];
+        this.pingmessage = false;
         if(options.votes){
             this.votes = {positive: options.votes[0], abstains: options.votes[1], negative: options.votes[2]}
         }else{
@@ -147,12 +165,16 @@ class Vote{
     }
 
     ping(){
+        if(this.message.deleted)return 0;
         if(this.updatevotes())return 0;
         var msg = "";
-        for(let i = 0; i < this.rolememberstoping.length; i++){
-            msg += rolememberstoping[i].toString() + ",\n";
+        for(let i = 0; i < this.memberstoping.length; i++){
+            msg += this.memberstoping[i].toString() + ",\n";
         }
-        this.message.channel.send(msg + "pleace vote!");
+        this.message.channel.send(msg + "pleace vote!").then(_msg => {
+            this.pingmessage = _msg;
+            fs.writeFileSync("Votes/" + this.message.id + ".json", this.toJSON())
+        });
     }
 
     updatevotes(){
@@ -199,12 +221,34 @@ class Vote{
      * @param {Boolean} result - true for 👍 and false for 👎
      */
     finish(result){
-        const rolemembers = this.VotingSystem.Role.members.array().length;
+        var embeded_vote;
         if(result){
-            this.VotingSystem.ResultsChannel.send(this.message.content + " voted onto the island (" + (this.votes.positive - 1) + "," + (this.votes.abstains - 1) + "," + (this.votes.negative - 1) + ";" + (rolemembers - this.voters.length) + ")")
+            embeded_vote = new Discord.MessageEmbed()
+            .setColor('#0ff00')
+            .setTitle(this.message.embeds[0].title + " was voted onto the island")
+            .setAuthor('Voting Bot', 'https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png', 'https://github.com/Kirill-iceland/voting-bot')
+            .setDescription("👍: " + (this.votes.positive - 1) + ", ✋: " + (this.votes.abstains - 1) + ", 👎: " + (this.votes.negative - 1))
+            .setThumbnail(theimage)
+            .setFooter('Thank you for voting!', theimage);
         }else{
-            this.VotingSystem.ResultsChannel.send(this.message.content + " yeeeted of the island (" + (this.votes.positive - 1) + "," + (this.votes.abstains - 1) + "," + (this.votes.negative - 1) + ";" + (rolemembers - this.voters.length) + ")")
+            embeded_vote = new Discord.MessageEmbed()
+            .setColor('#ff0000')
+            .setTitle(this.message.embeds[0].title + " was yeeeted of the island")
+            .setAuthor('Voting Bot', 'https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png', 'https://github.com/Kirill-iceland/voting-bot')
+            .setDescription("👍: " + (this.votes.positive - 1) + ", ✋: " + (this.votes.abstains - 1) + ", 👎: " + (this.votes.negative - 1))
+            .setThumbnail(theimage)
+            .setFooter('Thank you for voting!', theimage);
         }
+        if(this.memberstoping.length > 0){
+            var msg = "";
+            for(let i = 0; i < this.memberstoping.length; i++){
+                msg += this.memberstoping[i].displayName + ",\n";
+            }
+            embeded_vote.addField("People who did not vote:", msg.substring(0, msg.length - 2), false);
+        }
+
+        this.VotingSystem.ResultsChannel.send(embeded_vote)
+        
         for(var i = 0; i < options.Systems.Votes[this.VotingSystem.nuberoftheVotingSystem].numberofVotes; i++){
             if(options.Systems.Votes[this.VotingSystem.nuberoftheVotingSystem].fileids[i] == this.message.id){
                 options.Systems.Votes[this.VotingSystem.nuberoftheVotingSystem].fileids.splice(i, 1);
@@ -213,6 +257,9 @@ class Vote{
             }
         }
         this.message.delete();
+        if(this.pingmessage){
+            this.pingmessage.delete();
+        }
     }
 
     delete(){
@@ -223,28 +270,35 @@ class Vote{
                 fs.writeFileSync("options.json", JSON.stringify(options));
             }
         }
+        if(this.pingmessage){
+            this.pingmessage.delete();
+        }
         this.message.delete();
     }
 
     toJSON(){
-        const options = {message: this.message.id, VotingSystem: this.VotingSystem.VotingChannel.id};
+        const options = {message: this.message.id, VotingSystem: this.VotingSystem.VotingChannel.id, pingmessage: this.pingmessage.id};
         return JSON.stringify(options);
     }
 
     /**
      * string should look like:                                   
-     * "{"message": "id", "VotingSystem": "id"}"
+     * ``"{"message": "id", "VotingSystem": "id"}"``
      * @param {String} options - string from JSON file
      * @param {VotingSystem} VotingSystem - Voting System that has this Vote (optional)
      */
     static async fromJSON(options, VotingSystem = false){
         options = JSON.parse(options);
         if(VotingSystem){
-            return new Vote(await searcmessage(options.message), VotingSystem)
+            var newVote = new Vote(await searcmessage(options.message), VotingSystem);
+            newVote.pingmessage = options.pingmessage;
+            return newVote;
         }else{ 
             for(var i = 0; i < VotingSystemarray.length; i++){
                 if(VotingSystemarray[i].VotingChannel.id == options.VotingSystem){
-                    return new Vote(await searcmessage(options.message), VotingSystemarray[i]);
+                    var newVote = new Vote(await searcmessage(options.message), VotingSystemarray[i]);
+                    newVote.pingmessage = options.pingmessage;
+                    return newVote;
                 }
             }
         }
@@ -315,6 +369,16 @@ function checkchannel(id){
         }
     }
     return ["notingfound"];
+}
+
+function searchvote(id){
+    for(var i = 0; i < VotingSystemarray.length; i++){
+        for(var j = 0; j < VotingSystemarray[i].VoteArray.length; j++){
+            if(VotingSystemarray[i].VoteArray[j].message.id == id){
+                return VotingSystemarray[i].VoteArray[j];
+            }
+        }
+    }
 }
 
 function searcmember(id){
@@ -392,11 +456,17 @@ client.on("ready", async () => {
 
 client.on("message", msg => {
     if(msg.member.user.id == client.user.id) return 0;
-    if(msg.content.substring(0, 5).toLowerCase() != "!vote") return 0;
     if(msg.content.substring(0, 7).toLowerCase() == "notvote") return 0;
+    if(msg.content.substring(0, 7).toLowerCase() == "!delete" && searchvote(msg.content.substring(7).replace(/ /g, ""))){
+        if(msg.member.hasPermission("ADMINISTRATOR")){
+            searchvote(msg.content.substring(7).replace(/ /g, "")).delete()
+        }else{
+            msg.reply("you dont have the permisions to use this command!")
+        }
+    }
+    if(msg.content.substring(0, 5).toLowerCase() != "!vote") return 0;
     // console.log(msg.channel);
 
-    //fixes problem with people using different emojis
     if(checkchannel(msg.channel.id)[0] == "voting"){
         VotingSystemarray[checkchannel(msg.channel.id)[1]].addVote(msg);
     }
