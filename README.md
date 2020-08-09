@@ -6,7 +6,7 @@
 ## Comands 
 ```!vote``` - makes a vote
 
-```notvote``` - ignores the message as not a vote
+```!delete id_of_the_message``` to delete vote (Only available to **admins**) --- This command an be used in any channel (So please don´t spam voting channel)   
 ## Features   
 1. Bot will check who voted and ping people who did not vote after 24hours.
 2. Embeded text for the vote, fork to change icons and custom message as you please.
