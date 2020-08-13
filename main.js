@@ -99,7 +99,6 @@ class VotingSystem{
             .addFields(
                 { name: 'What to vote', value: "👍 for yes, ✋ to abstain, 👎 for no.", inline: true },
             )
-            .setImage(theimage)
             .setTimestamp()
             .setFooter('Thank you for voting!', theimage);
         
