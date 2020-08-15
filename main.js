@@ -13,7 +13,7 @@ const newVotingSystems= [];
 
 var VotingSystemarray = [];
 //time before pinging in ms || 24h = 86400000‬ms
-const pingtime = 10000;
+const pingtime = 20000;
 
 var options = JSON.parse(fs.readFileSync("options.json"));
 
@@ -163,9 +163,9 @@ class Vote{
         }
     }
 
-    ping(){
+    async ping(){
         if(this.message.deleted)return 0;
-        if(this.updatevotes())return 0;
+        if(await this.updatevotes())return 0;
         var msg = "";
         for(let i = 0; i < this.memberstoping.length; i++){
             msg += this.memberstoping[i].toString() + ",\n";
@@ -176,7 +176,10 @@ class Vote{
         });
     }
 
-    updatevotes(){
+    async updatevotes(){
+        await this.message.reactions.resolve('👍').users.fetch()
+        await this.message.reactions.resolve('✋').users.fetch()
+        await this.message.reactions.resolve('👎').users.fetch()
         this.memberstoping = [];
         var rolemembers = this.VotingSystem.Role.members.array();
         for(let i = 0; i < rolemembers.length; i++){
