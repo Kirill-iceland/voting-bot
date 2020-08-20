@@ -140,11 +140,13 @@ class Vote{
     /**
      * @param {Discord.Message} message - message
      * @param {VotingSystem} VotingSystem - Voting System that it is part of
+     * @param {Discord.User} author - author of the vote
      * @param {object} options - Options for this Vote (optonal)
      */
-    constructor(message, VotingSystem, options = {votes: [0, 0, 0], voters: []}){
+    constructor(message, VotingSystem, author, options = {votes: [0, 0, 0], voters: []}){
         this.message = message;
         this.VotingSystem = VotingSystem;
+        this.author = author;
         this.memberstoping = [];
         this.pingmessage = false;
         if(options.votes){
@@ -279,26 +281,26 @@ class Vote{
     }
 
     toJSON(){
-        const options = {message: this.message.id, VotingSystem: this.VotingSystem.VotingChannel.id, pingmessage: this.pingmessage.id};
+        const options = {message: this.message.id, VotingSystem: this.VotingSystem.VotingChannel.id, author: this.author.id, pingmessage: this.pingmessage.id};
         return JSON.stringify(options);
     }
 
     /**
      * string should look like:                                   
-     * ``"{"message": "id", "VotingSystem": "id"}"``
+     * ``'{"message": "id", "VotingSystem": "id", "author": "id"}'``
      * @param {String} options - string from JSON file
      * @param {VotingSystem} VotingSystem - Voting System that has this Vote (optional)
      */
     static async fromJSON(options, VotingSystem = false){
         options = JSON.parse(options);
         if(VotingSystem){
-            var newVote = new Vote(await searcmessage(options.message), VotingSystem);
+            var newVote = new Vote(await searcmessage(options.message), VotingSystem, searchuser(options.user));
             newVote.pingmessage = options.pingmessage;
             return newVote;
         }else{ 
             for(var i = 0; i < VotingSystemarray.length; i++){
                 if(VotingSystemarray[i].VotingChannel.id == options.VotingSystem){
-                    var newVote = new Vote(await searcmessage(options.message), VotingSystemarray[i]);
+                    var newVote = new Vote(await searcmessage(options.message), VotingSystemarray[i], searchuser(options.user));
                     newVote.pingmessage = options.pingmessage;
                     return newVote;
                 }
@@ -373,6 +375,10 @@ function checkchannel(id){
     return ["notingfound"];
 }
 
+/**
+ * @param {String} id - id of Vote
+ * @returns {Vote} Vote
+ */
 function searchvote(id){
     for(var i = 0; i < VotingSystemarray.length; i++){
         for(var j = 0; j < VotingSystemarray[i].VoteArray.length; j++){
@@ -380,6 +386,15 @@ function searchvote(id){
                 return VotingSystemarray[i].VoteArray[j];
             }
         }
+    }
+}
+
+function searchuser(id){
+    var guilds = client.guilds.cache.array();
+    for(var i = 0; i < guilds.length; i++){
+        var members = guilds[i].members;
+        var member = members.resolve(id);
+        try{if(member){return member.user}}catch(error){};
     }
 }
 
@@ -459,7 +474,7 @@ client.on("ready", async () => {
 client.on("message", msg => {
     if(msg.member.user.id == client.user.id) return 0;
     if(msg.content.substring(0, 7).toLowerCase() == "!delete" && searchvote(msg.content.substring(7).replace(/ /g, ""))){
-        if(msg.member.hasPermission("ADMINISTRATOR")){
+        if(msg.member.hasPermission("ADMINISTRATOR") || searchvote(msg.content.substring(7).replace(/ /g, "")).author == msg.author){
             searchvote(msg.content.substring(7).replace(/ /g, "")).delete()
         }else{
             msg.reply("you dont have the permisions to use this command!")
