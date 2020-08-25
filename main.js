@@ -262,7 +262,9 @@ class Vote{
         }
         this.message.delete();
         if(this.pingmessage){
-            this.pingmessage.delete();
+            if(!this.pingmessage.deleted){
+                this.pingmessage.delete();
+            }
         }
     }
 
@@ -275,7 +277,9 @@ class Vote{
             }
         }
         if(this.pingmessage){
-            this.pingmessage.delete();
+            if(!this.pingmessage.deleted){
+                this.pingmessage.delete();
+            }
         }
         this.message.delete();
     }
