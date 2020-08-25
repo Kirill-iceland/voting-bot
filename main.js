@@ -119,7 +119,7 @@ class VotingSystem{
             embeded_message = sentEmbed;
         });
         //now the voting system relies on the embeded bot message not the user message
-        this.VoteArray.push(new Vote(embeded_message, this));
+        this.VoteArray.push(new Vote(embeded_message, this, message.author));
         message.delete();
         this.UpdateTimestap = Date.now();
         fs.writeFileSync("VotingSystem/" + this.VotingChannel.id + ".json", this.toJSON());
