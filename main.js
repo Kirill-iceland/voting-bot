@@ -189,7 +189,7 @@ class Vote{
                 if(this.message.reactions.resolve('👍').users.resolve(rolemembers[i].user.id) || this.message.reactions.resolve('✋').users.resolve(rolemembers[i].user.id) || this.message.reactions.resolve('👎').users.resolve(rolemembers[i].user.id)){
                     var skip = false;
                     for(var j = 0; j < this.voters.length; j++){
-                        if(this.voters[j].Member == rolemembers[i]) skip = true;
+                        if(this.voters[j].Member.id == rolemembers[i].id) skip = true;
                     }
                     if(!skip){
                         this.voters.push(new Voter(rolemembers[i]))
@@ -209,11 +209,10 @@ class Vote{
         try{this.votes = {positive: this.message.reactions.resolve('👍').count, abstains: this.message.reactions.resolve('✋').count, negative: this.message.reactions.resolve('👎').count}}catch{}
 
         if(Date.now() - this.message.createdTimestamp > pingtime){
-            const rolemembers = this.VotingSystem.Role.members.array().length;
-            if(this.votes.positive > this.votes.negative + (rolemembers - this.voters.length)){
+            if(this.votes.positive > this.votes.negative + this.memberstoping.length){
                 this.finish(true);
                 return true;
-            }else if(this.votes.negative >= this.votes.positive + (rolemembers - this.voters.length)){
+            }else if(this.votes.negative >= this.votes.positive + this.memberstoping.length){
                 this.finish(false);
                 return true;
             }
