@@ -12,8 +12,11 @@ var theimage = 'https://i.imgur.com/277OAeU.png';
 const newVotingSystems= [];
 
 var VotingSystemarray = [];
+
 //time before pinging in ms || 24h = 86400000‬ms
-const pingtime = 20000;
+const pingtime = 86400000;
+//time before finishing the vote || 72h = 259200000ms
+const finishtime = 259200000;
 
 var options = JSON.parse(fs.readFileSync("options.json"));
 
@@ -158,6 +161,22 @@ class Vote{
             this.voters = options.voters;
         }else{
             this.voters = [];
+        }
+
+        if(Date.now() - message.createdTimestamp <= finishtime){
+            setTimeout(() => {
+                if(this.votes.positive > this.votes.negative){
+                    this.finish(true);
+                }else if(this.votes.negative >= this.votes.positive){
+                    this.finish(false);
+                }
+            }, finishtime - Date.now() + message.createdTimestamp);
+        }else{
+            if(this.votes.positive > this.votes.negative){
+                this.finish(true);
+            }else if(this.votes.negative >= this.votes.positive){
+                this.finish(false);
+            }
         }
 
         if(Date.now() - message.createdTimestamp <= pingtime){
