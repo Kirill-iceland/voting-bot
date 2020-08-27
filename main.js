@@ -14,9 +14,9 @@ const newVotingSystems= [];
 var VotingSystemarray = [];
 
 //time before pinging in ms || 24h = 86400000‬ms
-const pingtime = 86400000;
+const pingtime = 10000;
 //time before finishing the vote || 72h = 259200000ms
-const finishtime = 259200000;
+const finishtime = 20000;
 
 var options = JSON.parse(fs.readFileSync("options.json"));
 
@@ -93,7 +93,7 @@ class VotingSystem{
 
         //embeded object that the bot sends
         const embeded_vote = new Discord.MessageEmbed()
-            .setColor('#0099ff')
+            .setColor('#ff69B4')
             .setTitle(message.content.substring(5))
             .setURL()
             .setAuthor('Voting Bot', 'https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png', 'https://github.com/Kirill-iceland/voting-bot')
@@ -243,6 +243,7 @@ class Vote{
      * @param {Boolean} result - true for 👍 and false for 👎
      */
     finish(result){
+        if(this.message.deleted)return 0;
         var embeded_vote;
         if(result){
             embeded_vote = new Discord.MessageEmbed()
