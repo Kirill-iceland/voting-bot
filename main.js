@@ -256,7 +256,7 @@ class Vote{
         }else{
             embeded_vote = new Discord.MessageEmbed()
             .setColor('#ff0000')
-            .setTitle(this.message.embeds[0].title + " was yeeeted of the island")
+            .setTitle(this.message.embeds[0].title + " was yeeeted off the island")
             .setAuthor('Voting Bot', 'https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png', 'https://github.com/Kirill-iceland/voting-bot')
             .setDescription("👍: " + (this.votes.positive - 1) + ", ✋: " + (this.votes.abstains - 1) + ", 👎: " + (this.votes.negative - 1))
             .setThumbnail(theimage)
