@@ -16,7 +16,7 @@ var VotingSystemarray = [];
 //time before pinging in ms || 24h = 86400000‬ms
 const pingtime = 10000;
 //time before finishing the vote || 72h = 259200000ms
-const finishtime = 20000;
+const finishtime = 259200000;
 
 var options = JSON.parse(fs.readFileSync("options.json"));
 
@@ -242,8 +242,9 @@ class Vote{
     /**
      * @param {Boolean} result - true for 👍 and false for 👎
      */
-    finish(result){
+    async finish(result){
         if(this.message.deleted)return 0;
+        await this.updatevotes();
         var embeded_vote;
         if(result){
             embeded_vote = new Discord.MessageEmbed()
@@ -503,11 +504,20 @@ client.on("message", msg => {
             msg.reply("you dont have the permisions to use this command!")
         }
     }
-    if(msg.content.substring(0, 5).toLowerCase() != "!vote") return 0;
-    // console.log(msg.channel);
-
-    if(checkchannel(msg.channel.id)[0] == "voting"){
-        VotingSystemarray[checkchannel(msg.channel.id)[1]].addVote(msg);
+    if(msg.content.substring(0, 5).toLowerCase() == "!vote"){
+        if(checkchannel(msg.channel.id)[0] == "voting"){
+            VotingSystemarray[checkchannel(msg.channel.id)[1]].addVote(msg);
+        }
+    }else if(msg.content.substring(0, 9).toLowerCase() == "!timeleft"){
+        vote = searchvote(msg.content.substring(9).replace(/ /g, ""));
+        if(vote){
+            ms = finishtime - (Date.now() - vote.message.createdTimestamp)
+            var repmsg = Math.floor(ms / 86400000).toString() + "d, ";
+            repmsg += Math.floor(ms % 86400000 / 3600000).toString() + ":";
+            repmsg += Math.floor(ms % 3600000 / 60000).toString() + ":";
+            repmsg += Math.floor(ms % 60000 / 1000).toString() + "";
+            msg.reply(repmsg);
+        }
     }
 });
 
