@@ -4,8 +4,8 @@
 ## [Install Here](https://github.com/Kirill-iceland/voting-bot/releases)
 ---
 ## Comands 
-```!vote``` - makes a vote
-```!timeleft id_of_the_message``` to get time left of the vote* 
+```!vote``` - makes a vote   
+```!timeleft id_of_the_message``` to get time left of the vote*   
 ```!delete id_of_the_message``` to delete vote (Only available to **admins** or **Author of the vote**)*   
    
 *This command an be used in any channel (**So please don´t spam voting channel**)   
